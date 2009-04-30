@@ -1,0 +1,1 @@
+This is to replace restfulsocks. It's a crazy framework for using various protocols from interfaces of various protocols... primarily HTTP. WEIRD
