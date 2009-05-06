@@ -9,7 +9,12 @@ class ConnectResource(Resource):
         if len(request.prepath) < 2:
             return ConnectResource()
         else:
-            return pdroid.interface_handler(request.prepath[0], 'http')()
+            protocol = request.prepath[0]
+            resource = pdroid.from_client(protocol, 'http_resource', None)
+            if resource:
+                return resource()
+            else:
+                return None
 
     def render(self, request):
         try:
@@ -19,13 +24,14 @@ class ConnectResource(Resource):
         port = int(port) if port else None
         request.protocol = protocol
         try:
-            d = pdroid.connect(protocol, host, port)
-            d.addCallback(lambda x: self.connection_made(request, x))
+            d = pdroid.connect(protocol, host, port, request)
+            d.addCallback(pdroid.from_client(protocol, 'http_onconnect', http_onconnect))
+            d.addErrback(lambda x: x.printTraceback())
             return NOT_DONE_YET
         except ImportError, e:
             return e.message
             
-    def connection_made(self, request, factory):
-        request.redirect('/%s/%s' % (request.protocol, factory.id))
-        request.finish()
-        
+def http_onconnect(factory):
+    request = factory.request
+    request.redirect('/%s/%s' % (request.protocol, factory.id))
+    request.finish()

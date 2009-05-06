@@ -14,10 +14,11 @@ class Socket(LineReceiver):
         self.factory.deferred.callback(self.factory)
 
 class SocketFactory(ClientFactory):
-    def __init__(self, id, deferred):
+    def __init__(self, id, request, deferred):
         if pdroid.connections.get(id):
             raise "Connection id in use"
         self.id = id
+        self.request = request
         self.deferred = deferred
         
     def buildProtocol(self, addr):
@@ -47,4 +48,4 @@ class ConnectionResource(Resource):
 
 factory = SocketFactory
 default_port = None
-interface_handlers = {'http': ConnectionResource}
+http_resource = ConnectionResource
