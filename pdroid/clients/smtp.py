@@ -1,5 +1,5 @@
 from OpenSSL.SSL import SSLv3_METHOD
-from twisted.mail.smtp import ESMTPSenderFactory, ESMTPSender
+from twisted.mail.smtp import SMTPSenderFactory, ESMTPSenderFactory, ESMTPSender
 from twisted.internet.ssl import ClientContextFactory
 from twisted.internet.defer import Deferred
 from twisted.web.resource import Resource
@@ -26,31 +26,44 @@ class SMTPFactory(ESMTPSenderFactory):
         self.request = request
         self.deferred = deferred
         self.sentDeferred = Deferred()
+        self.sentDeferred.addErrback(self.deferred.errback)
         
-        fromEmail = request.args.get('from', request.args.get('username', [request.getUser()]))[0]
-        
-        ESMTPSenderFactory.__init__(self, 
-            request.args.get('username', [request.getUser()])[0],
-            request.args.get('password', [request.getPassword()])[0],
-            fromEmail[0],
-            request.args.get('to')[0],
-            StringIO.StringIO('''\
+        username = request.args.get('username', [request.getUser()])[0]
+        password = request.args.get('password', [request.getPassword()])[0]
+        fromEmail = request.args.get('from', username)[0]
+        toEmail = request.args.get('to')[0]
+        subject = request.args.get('subject')[0]
+        message = StringIO.StringIO('''\
 Date: Fri, 6 Feb 2004 10:14:39 -0800
 From: %s
 To: %s
 Subject: %s
 
 %s
-''' % (fromEmail[0], 
-        request.args.get('to')[0], 
-        request.args.get('subject')[0], 
-        request.args.get('body', [''])[0])),
+''' % (fromEmail, toEmail, subject, request.args.get('body', [''])[0]))
+        
+        ESMTPSenderFactory.__init__(self, 
+            username,
+            password,
+            fromEmail,
+            toEmail,
+            message,
             self.sentDeferred,
             retries=0,
-            contextFactory=contextFactory,)
+            contextFactory=contextFactory,
+            requireAuthentication=False,
+            requireTransportSecurity=False,)
+        #else:
+        #    SMTPSenderFactory.__init__(self, 
+        #        fromEmail,
+        #        toEmail,
+        #        message,
+        #        self.sentDeferred,
+        #        retries=0,)
     
     def buildProtocol(self, addr):
         p = pdroid.connections[self.id] = ESMTPSenderFactory.buildProtocol(self, addr)
+        p.factory = self
         return p
 
         

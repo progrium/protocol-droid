@@ -31,7 +31,7 @@ class SocketFactory(ClientFactory):
         
 class ConnectionResource(Resource):
     def render_GET(self, request):
-        id = request.prepath[1]
+        id = request.prepath[0].split(':')[1]
         conn = pdroid.connections[id]
         data = conn.buffer
         conn.buffer = ''
@@ -41,7 +41,7 @@ class ConnectionResource(Resource):
             return data
         
     def render_POST(self, request):
-        id = request.prepath[1]
+        id = request.prepath[0].split(':')[1]
         conn = pdroid.connections[id]
         conn.transport.write(request.content.getvalue())
         return "Thanks!"

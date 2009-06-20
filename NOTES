@@ -1,0 +1,37 @@
+Outgoing connection HTTP API:
+
+http://localhost/[protocol]:[host]
+http://localhost/[protocol]:[host]:[port]
+http://localhost/[protocol]:[host]/[action]
+http://[user]:[pass]@localhost/[protocol]:[host]
+
+Really stateful protocols will then be redirected to a connection resource:
+
+http://localhost/[protocol]:[connection_id]
+
+Methods and sub-resources on this resource are defined by each protocol.
+
+Examples:
+
+  Open a socket connection:
+    GET http://localhost/socket:www.google.com:80
+    Redirected to: http://localhost/socket:239823798/
+    From there GET/POST read/write to the socket respectively.
+
+  Send an email over SMTP:
+    POST http://user:pass@localhost/smtp:smtp.gmail.com
+      username=progrium@gmail.com
+      password=xxxx
+      to=progrium@gmail.com
+      subject=You win!
+      body=Just kidding!
+  
+  Send an IM over XMPP using quick action:
+    POST http://user:pass@localhost/xmpp:gtalk.com/send
+
+
+===========
+listening api
+
+POST http://localhost/smtp:listen:25
+  callback=http://somecallback
