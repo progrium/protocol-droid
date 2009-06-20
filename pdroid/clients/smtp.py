@@ -27,11 +27,13 @@ class SMTPFactory(ESMTPSenderFactory):
         self.deferred = deferred
         self.sentDeferred = Deferred()
         
+        fromEmail = request.args.get('from', request.args.get('username', [request.getUser()]))[0]
+        
         ESMTPSenderFactory.__init__(self, 
-            request.args.get('username', request.getUser()),
-            request.args.get('password', request.getPassword()),
-            request.args.get('from'),
-            request.args.get('to'),
+            request.args.get('username', [request.getUser()])[0],
+            request.args.get('password', [request.getPassword()])[0],
+            fromEmail[0],
+            request.args.get('to')[0],
             StringIO.StringIO('''\
 Date: Fri, 6 Feb 2004 10:14:39 -0800
 From: %s
@@ -39,11 +41,12 @@ To: %s
 Subject: %s
 
 %s
-''' % (request.args.get('from'), 
-        request.args.get('to'), 
-        request.args.get('subject'), 
-        request.args.get('body'))),
+''' % (fromEmail[0], 
+        request.args.get('to')[0], 
+        request.args.get('subject')[0], 
+        request.args.get('body', [''])[0])),
             self.sentDeferred,
+            retries=0,
             contextFactory=contextFactory,)
     
     def buildProtocol(self, addr):
