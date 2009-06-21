@@ -9,7 +9,7 @@ import md5
 import email
 import urllib
 
-HOOKAH_HOST = 'localhost:8081'
+HOOKAH_HOST = 'hookah.webhooks.org'
 
 class MessageDelivery:
     implements(smtp.IMessageDelivery)
