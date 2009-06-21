@@ -15,8 +15,8 @@ class ConnectorResource(Resource):
             if resource:
                 return resource()
             else:
-                return None
-        except ValueError:
+                return ConnectorResource()
+        except:
             return ConnectorResource()
 
     def render(self, request):
