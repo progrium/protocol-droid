@@ -17,8 +17,6 @@ class XMPPFactory(xmlstream.XmlStreamFactory):
         self.request = request
         self.deferred = deferred
         
-        self.continueTrying = 0
-        
         jabber_id = request.args.get('username', [request.getUser()])[0]
         self.jabber_id = jid.JID(jabber_id)
         secret = request.args.get('password', [request.getPassword()])[0]
@@ -37,29 +35,28 @@ class XMPPFactory(xmlstream.XmlStreamFactory):
         #presence.addElement('status').addContent('Online')
         xmlstream.send(presence)
 
-        xmlstream.addObserver('/message',  self.messageReceived)
-        #xmlstream.addObserver('/presence', debug)
-        xmlstream.addObserver('/*',       debug)
+        xmlstream.addObserver('/message',  self.receivedMessage)
+        #xmlstream.addObserver('/presence', self.receivedPresence)
+        #xmlstream.addObserver('/*',       debug)
     
     def sendMessage(self, to, body):
         message = domish.Element(('jabber:client', 'message'))
         message['to'] = jid.JID(to).full()
-        #message['from'] = self.jabber_id.full()
         message['type'] = 'chat'
         message.addElement('body', 'jabber:client', body)
         pdroid.connections[self.id].send(message)
     
-    def messageReceived(self, el):
+    def receivedMessage(self, el):
         from_jid = el['from']
         for e in el.elements():
             if e.name == 'body':
                 if el['type'] == 'chat':
-                    self.chatReceived(from_jid, str(e))
+                    self.receivedChat(from_jid, str(e))
                 else:
                     print el.toXml()
     
-    def chatReceived(self, fromJid, body):
-        pass
+    def receivedChat(self, fromJid, body):
+        print '%s: %s' % (fromJid, body)
     
     def buildProtocol(self, addr):
         p = pdroid.connections[self.id] = xmlstream.XmlStreamFactory.buildProtocol(self, addr)
