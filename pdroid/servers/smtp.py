@@ -62,9 +62,10 @@ class Message:
 class SMTPFactory(protocols.ESMTPFactory):
     callbacks = {}
     
-    def __init__(self, port, request):
+    def __init__(self, port, request, token = None):
         self.port = port
         self.request = request
+        self.token = token
         self.callbacks['*'] = request.args.get('callback', [None])[0]
         smtp.SMTPFactory.__init__(self)
         self.delivery = MessageDelivery(self)

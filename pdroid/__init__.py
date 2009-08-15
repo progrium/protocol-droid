@@ -12,13 +12,13 @@ def connect(protocol, host, port = None, request = None, deferred = None):
     reactor.connectTCP(host, port or module.default_port or 1, f)
     return f.deferred
 
-def listen(protocol, port = None, request = None):
+def listen(protocol, port = None, request = None, token = None):
     module = __import__('.'.join(['pdroid', 'servers', protocol]), globals(), locals(), ['factory', 'default_port'])
     if port in listeners:
         f = listeners[port]
         f.relisten(request)
     else:
-        f = module.factory(port, request)
+        f = listeners[port] = module.factory(port, request, token)
         reactor.listenTCP(port or module.default_port or 1, f)
     return f
     

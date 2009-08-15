@@ -27,12 +27,19 @@ class ConnectorResource(Resource):
         port = int(port) if port else None
         request.protocol = protocol
         if host == 'listen':
-            try:
-                pdroid.listen(protocol, port, request)
-                request.setResponseCode(http.ACCEPTED)
-                return "202 Listening on port %s" % port
-            except ImportError, e:
-                return e.message
+            if request.method == 'GET':
+                if port in pdroid.listeners:
+                    return pdroid.listeners[port].token or ""
+                else:
+                    request.setResponseCode(http.NOT_FOUND)
+                    return "404 Not listening"
+            else:
+                try:
+                    pdroid.listen(protocol, port, request, request.args.get('token', [None])[0])
+                    request.setResponseCode(http.ACCEPTED)
+                    return "202 Listening on port %s" % port
+                except ImportError, e:
+                    return e.message
         else:
             try:
                 d = Deferred()

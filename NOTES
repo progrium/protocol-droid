@@ -35,3 +35,7 @@ listening api
 
 POST http://localhost/smtp:listen:25
   callback=http://somecallback
+  token=mytoken
+
+GET http://localhost/smtp:listen:25
+    "mytoken"
