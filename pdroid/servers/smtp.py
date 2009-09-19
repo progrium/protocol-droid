@@ -110,7 +110,7 @@ def if_fail(reason):
 def parse_mail(data):
     msg = email.message_from_string(data)
     prefix = md5.new(data).hexdigest()
-    attachments = []
+    attachments = {}
     body_html = None
     body = None
     for part in msg.walk():
@@ -129,7 +129,7 @@ def parse_mail(data):
             if not filename:
                 filename = 'part-%03d%s' % (counter, 'bin')
                 counter += 1
-            attachments.append((filename, part.get_payload(decode=True)))
+            attachments.setdefault('attachment', []).append(('attachment', filename, part.get_payload(decode=True)))
     # 'headers': dict([k,v for k,v in msg.items() if not 'mime' in k.lower() and not 'multipart' in v.lower()]),
     data = {
         'to': [msg['to']],
@@ -138,11 +138,7 @@ def parse_mail(data):
         'body': [body],}
     if body_html:
         data['body_html'] = [body_html]
-    files = {}
-    for attachment in attachments:
-        key = 'attachment'+str(attachments.index(attachment))
-        files[key] = [(key, attachment[0], attachment[1])]
-    return data, files
+    return data, attachments
 
 default_port = 25
 factory = SMTPFactory
