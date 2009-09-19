@@ -9,7 +9,7 @@ import md5
 import email
 import urllib
 
-HOOKAH_HOST = 'hookah.webhooks.org'
+HOOKAH_HOST = 'hookah.progrium.com'
 
 class MessageDelivery:
     implements(smtp.IMessageDelivery)
@@ -51,7 +51,7 @@ class Message:
             'Content-Type': 'application/x-www-form-urlencoded',
             'Content-Length': str(len(postdata)),
         }
-        client.getPage('http://%s/' % HOOKAH_HOST, followRedirect=0, method='POST', headers=headers, postdata=postdata).addErrback(if_fail)
+        client.getPage('http://%s/dispatch' % HOOKAH_HOST, followRedirect=0, method='POST', headers=headers, postdata=postdata).addErrback(if_fail)
         self.lines = None
         return defer.succeed(None)
     
