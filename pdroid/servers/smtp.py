@@ -8,8 +8,33 @@ import datetime
 import md5
 import email
 import urllib
+import mimetools
+import mimetypes
 
 HOOKAH_HOST = 'hookah.progrium.com'
+
+def encode_multipart_formdata(fields, files):
+    BOUNDARY = mimetools.choose_boundary()
+    CRLF = '\r\n'
+    L = []
+    for key in fields:
+        for value in fields[key]:
+            L.append('--' + BOUNDARY)
+            L.append('Content-Disposition: form-data; name="%s"' % key)
+            L.append('')
+            L.append(value)
+    for key in files:
+        for key, filename, value in files[key]:
+            L.append('--' + BOUNDARY)
+            L.append('Content-Disposition: form-data; name="%s"; filename="%s"' % (key, filename))
+            L.append('Content-Type: %s' % mimetypes.guess_type(filename)[0] or 'application/octet-stream')
+            L.append('')
+            L.append(value)
+    L.append('--' + BOUNDARY + '--')
+    L.append('')
+    body = CRLF.join(L)
+    content_type = 'multipart/form-data; boundary=%s' % BOUNDARY
+    return content_type, body
 
 class MessageDelivery:
     implements(smtp.IMessageDelivery)
@@ -44,14 +69,14 @@ class Message:
         self.lines.append(line)
     
     def eomReceived(self):
-        data = parse_mail("\n".join(self.lines))
-        data['_url'] = self.callback_url
-        postdata = urllib.urlencode(data)
+        fields, files = parse_mail("\n".join(self.lines))
+        fields['_url'] = [self.callback_url]
+        content_type, body = encode_multipart_formdata(fields, files)
         headers = {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'Content-Length': str(len(postdata)),
+            'Content-Type': content_type,
+            'Content-Length': str(len(body)),
         }
-        client.getPage('http://%s/dispatch' % HOOKAH_HOST, followRedirect=0, method='POST', headers=headers, postdata=postdata).addErrback(if_fail)
+        client.getPage('http://%s/dispatch' % HOOKAH_HOST, followRedirect=0, method='POST', headers=headers, postdata=body).addErrback(if_fail)
         self.lines = None
         return defer.succeed(None)
     
@@ -104,21 +129,20 @@ def parse_mail(data):
             if not filename:
                 filename = 'part-%03d%s' % (counter, 'bin')
                 counter += 1
-            fp = os.tmpfile()
-            fp.write(part.get_payload(decode=True))
-            attachments.append([filename, fp.tell(), fp])
+            attachments.append((filename, part.get_payload(decode=True)))
     # 'headers': dict([k,v for k,v in msg.items() if not 'mime' in k.lower() and not 'multipart' in v.lower()]),
     data = {
-        'to': msg['to'],
-        'from': msg['from'],
-        'subject': msg['subject'],
-        'body': body,}
+        'to': [msg['to']],
+        'from': [msg['from']],
+        'subject': [msg['subject']],
+        'body': [body],}
     if body_html:
-        data['body_html'] = body_html
-    if len(attachments):
-        for attachment in attachments:
-            data['file'+str(attachments.index(attachment))] = attachment
-    return data
+        data['body_html'] = [body_html]
+    files = {}
+    for attachment in attachments:
+        key = 'attachment'+str(attachments.index(attachment))
+        files[key] = [(key, attachment[0], attachment[1])]
+    return data, files
 
 default_port = 25
 factory = SMTPFactory
